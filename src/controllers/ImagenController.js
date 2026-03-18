@@ -37,7 +37,7 @@ class ImagenController {
             })
 
             const buffer = await sharp(response.data)
-                .blur(15)
+                .blur(20)
                 .toBuffer()
 
             const fileName = `blur-${Date.now()}.jpg`
