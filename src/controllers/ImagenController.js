@@ -51,7 +51,7 @@ class ImagenController {
             if (error) throw error
 
             const { data: publicUrlData } = supabase.storage
-                .from('profile_files')
+                .from(`profile_files/${buket}`)
                 .getPublicUrl(fileName)
 
             const publicUrl = publicUrlData.publicUrl
