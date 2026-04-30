@@ -2,6 +2,10 @@ import 'dotenv/config';
 import Stripe from 'stripe';
 import axios from 'axios';
 
+
+const n8nUrl = process.env.N8N_URL;
+const n8nKey = process.env.N8N_SECRET
+
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 const stripeHookKey = process.env.STRIPE_HOOK_KEY;
 const stripe = new Stripe(stripeKey);
@@ -23,9 +27,9 @@ class StripeController {
         }
 
         try {
-            await axios.post('https://talentquotedev.onikom.io/webhook/stripe/hook', event, {
+            await axios.post(`${n8nUrl}/stripe/hook`, event, {
                 headers:{
-                    'X-Webhook-Secret':'7941606991ee5f0a227b868a3e046e4adb2c8e0e5e7aeff957bd183aea5580cass'
+                    'X-Webhook-Secret': n8nKey
                 }
             });
             
