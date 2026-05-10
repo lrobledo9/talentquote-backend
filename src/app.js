@@ -17,6 +17,7 @@ app.use((req, res, next) => {
 
     return bodyParser.json()(req, res, next);
 });
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/v1', api);
 
 app.listen(port, () => {
