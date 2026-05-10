@@ -10,7 +10,7 @@ RUN apk add --no-cache \
 
 COPY package*.json ./
 
-RUN npm ci --ignore-scripts=false
+RUN npm install --ignore-scripts=false
 
 COPY src/ ./src/
 
