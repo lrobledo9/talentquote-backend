@@ -8,6 +8,8 @@ RUN apk add --no-cache \
     g++ \
     vips-dev
 
+RUN npm install -g node-gyp
+
 COPY package*.json ./
 
 RUN npm install --ignore-scripts=false
