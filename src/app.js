@@ -7,6 +7,7 @@ import api from './routes/api.js';
 const app = express();
 const port = process.env.PORT || 3000;
 
+
 app.use(cors());
 app.use((req, res, next) => {
     const pathname = req.originalUrl.split('?')[0];
@@ -17,6 +18,7 @@ app.use((req, res, next) => {
 
     return bodyParser.json()(req, res, next);
 });
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/v1', api);
 
 app.listen(port, () => {
