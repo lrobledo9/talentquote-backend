@@ -6,6 +6,6 @@ const route = express.Router();
 
 route.post('/blur', express.raw({ type: 'image/*', limit: '5mb' }) ,ImagenController.blur);
 
-route.post('/ia', express.raw({ type: 'image/*', limit: '5mb' }) ,ImagenController.generateImgIa);
+route.post('/background', express.raw({ type: 'image/*', limit: '5mb' }) ,ImagenController.background);
 
 export default route;

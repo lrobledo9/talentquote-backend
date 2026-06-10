@@ -11,9 +11,7 @@ const openai = new OpenAI({
 class OpenAIService {
     constructor() { }
 
-    async editImage(personResponse, backgroundResponse) {
-        console.log(personResponse, backgroundResponse);
-        
+    async editImage(personResponse, backgroundResponse, prompt) {     
 
         const personBuffer = Buffer.from(personResponse.data);
         const backgroundBuffer = Buffer.from(backgroundResponse.data);
@@ -34,22 +32,6 @@ class OpenAIService {
                 type: backgroundResponse.headers["content-type"]
             }
         );
-
-        const prompt = `
-                Place the person from the first image into the environment
-                shown in the second image.
-
-                Preserve:
-                - Face
-                - Hair
-                - Clothing
-                - Identity
-
-                Match lighting and perspective naturally.
-
-                Professional realistic photography.
-            `;
-
         const result = await openai.images.edit({
             model: "gpt-image-1",
             image: [personFile, backgroundFile],
@@ -64,13 +46,7 @@ class OpenAIService {
         );
 
         return imageBuffer
-
-
     }
-
-
-
-
 }
 
 export default new OpenAIService();
