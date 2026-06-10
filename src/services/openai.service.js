@@ -13,15 +13,14 @@ class OpenAIService {
 
     async editImage(personResponse, backgroundResponse, prompt) {     
 
-        const personBuffer = Buffer.from(personResponse.data);
+        const personBuffer = Buffer.from(personResponse.buffer);     
         const backgroundBuffer = Buffer.from(backgroundResponse.data);
-
 
         const personFile = await toFile(
             personBuffer,
             "person",
             {
-                type: personResponse.headers["content-type"]
+                type: personResponse.mimetype
             }
         );
 
@@ -32,20 +31,26 @@ class OpenAIService {
                 type: backgroundResponse.headers["content-type"]
             }
         );
-        const result = await openai.images.edit({
-            model: "gpt-image-1",
-            image: [personFile, backgroundFile],
-            prompt
-        });
+        try {
+            const result = await openai.images.edit({
+                model: "gpt-image-1",
+                image: [personFile, backgroundFile],
+                prompt
+            });
 
 
-        const imageBase64 = result.data[0].b64_json;
-        const imageBuffer = Buffer.from(
-            imageBase64,
-            "base64"
-        );
+            const imageBase64 = result.data[0].b64_json;
+            const imageBuffer = Buffer.from(
+                imageBase64,
+                "base64"
+            );
+            return imageBuffer
+        } catch (error) {
+           throw error;
+        }
+        
 
-        return imageBuffer
+       
     }
 }
 
