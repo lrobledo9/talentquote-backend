@@ -1,5 +1,9 @@
 import 'dotenv/config';
-import puppeteer from 'puppeteer';
+import axios from 'axios';
+import pdfmake from 'pdfmake';
+import path from 'path';
+import sharp from 'sharp';
+import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import { cvDefinition } from '../templates/pdfs/CvPdfTemplate.js';
 import OpenAIService from '../services/openai.service.js';
@@ -11,6 +15,28 @@ const supabase = createClient(
     `https://${projectId}.supabase.co`,
     serviceRole
 );
+const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
+const regularFontPath = path.resolve(
+    currentDirectory,
+    '../assets/fonts/roboto/Roboto-VariableFont_wdth,wght.ttf'
+);
+const italicFontPath = path.resolve(
+    currentDirectory,
+    '../assets/fonts/roboto/Roboto-Italic-VariableFont_wdth,wght.ttf'
+);
+
+pdfmake.setFonts({
+    Roboto: {
+        normal: regularFontPath,
+        bold: regularFontPath,
+        italics: italicFontPath,
+        bolditalics: italicFontPath
+    }
+});
+pdfmake.setUrlAccessPolicy(() => false);
+pdfmake.setLocalAccessPolicy((filePath) => (
+    filePath === regularFontPath || filePath === italicFontPath
+));
 
 /**
  * Devuelve el primer valor no vacío de una lista.
@@ -124,6 +150,34 @@ function buildTalentQuoteCvPath(originalPath) {
 }
 
 /**
+ * Descarga una imagen y la convierte a un data URI compatible con pdfmake.
+ * @param {string} imageUrl URL de la imagen.
+ * @returns {Promise<string>} Imagen codificada o cadena vacía si no está disponible.
+ */
+async function getImageDataUri(imageUrl) {
+    if (!imageUrl) {
+        return '';
+    }
+
+    try {
+        const response = await axios.get(imageUrl, {
+            responseType: 'arraybuffer',
+            timeout: 15000
+        });
+        const photoBuffer = await sharp(Buffer.from(response.data))
+            .resize(500, 500, { fit: 'cover' })
+            .jpeg({ quality: 85 })
+            .toBuffer();
+        const imageBase64 = photoBuffer.toString('base64');
+
+        return `data:image/jpeg;base64,${imageBase64}`;
+    } catch (error) {
+        console.error('Error downloading candidate photo:', error.message);
+        return '';
+    }
+}
+
+/**
  * Combina los datos del ingeniero con la información extraída del PDF.
  * @param {object} engineer Registro obtenido desde Supabase.
  * @param {object} extractedCv Datos estructurados extraídos del CV.
@@ -168,8 +222,6 @@ class CustomerController {
      * @returns {Promise<import('express').Response>} PDF o respuesta de error.
      */
     async cvCandidate(req, res) {
-        let browser;
-
         try {
             const { idCandidate } = req.body;
 
@@ -210,24 +262,9 @@ class CustomerController {
 
             const extractedCv = await OpenAIService.extractCvData(engineer.CV);
             const candidate = mapCandidateCv(engineer, extractedCv);
-            const html = cvDefinition(candidate);
-            browser = await puppeteer.launch({
-                headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
-            });
-
-            const page = await browser.newPage();
-            await page.setContent(html, {
-                waitUntil: ['load', 'networkidle0'],
-                timeout: 30000
-            });
-
-            const pdfData = await page.pdf({
-                format: 'A4',
-                printBackground: true,
-                preferCSSPageSize: true
-            });
-            const pdf = Buffer.from(pdfData);
+            candidate.photoDataUri = await getImageDataUri(candidate.photo);
+            const documentDefinition = cvDefinition(candidate);
+            const pdf = await pdfmake.createPdf(documentDefinition).getBuffer();
             const { bucket, filePath } = parseSupabaseStorageUrl(engineer.CV);
             const talentQuoteCvPath = buildTalentQuoteCvPath(filePath);
             const talentQuoteCvUrl = await StorageService.uploadPdf(
@@ -257,10 +294,6 @@ class CustomerController {
                 success: false,
                 message: 'No fue posible generar el CV en PDF.'
             });
-        } finally {
-            if (browser) {
-                await browser.close();
-            }
         }
     }
 }
